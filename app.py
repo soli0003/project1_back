@@ -326,6 +326,50 @@ def loan_book():
 
 
 
+#-------------------------------------------------------------------------------------Loan a specific book----------------------------------------------------------------------------------------
+
+
+@app.route('/loaaspecificnbook', methods=['POST'])
+def loan_specific_book():
+    data = request.get_json()
+    identification_number = data['identification_number']
+    book_id = data['book_id']
+    loan_date = datetime.strptime(data['loan_date'], '%Y-%m-%d')
+
+    # Check if identification number is incorrect
+    if not identification_number_check(identification_number):
+        return "Identification number is incorrect"
+    
+    # Check if the customer and book exist
+    customer = Customer.query.filter_by(identification_number=identification_number).first()
+    book = Book.query.get(book_id)
+
+    if not customer or not book:
+        return 'Invalid customer or book.'
+
+    cust_id = customer.id
+
+    # Check if book is deleted
+    if book.book_deleted:
+        return "Book does not exist. Please check book ID."
+
+    # Check if book is available to loan
+    if book.loan_active:
+        return "Book is currently on loan."
+
+    # If the book is available to loan, change to unavailable
+    book.loan_active = True
+
+    # Create a new loan record
+    new_loan = Loan(cust_id=cust_id, book_id=book_id, loan_date=loan_date, return_date=None)
+    db.session.add(new_loan)
+    db.session.commit()
+
+    return "Loan successful."
+
+
+
+
 
 
 #-------------------------------------------------------------------------------------Return a book ----------------------------------------------------------------------------------------
