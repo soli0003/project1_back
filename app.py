@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import json
 from flask import Flask, jsonify, request
 from sqlalchemy import desc
@@ -45,7 +45,7 @@ def show_all_customers():
     return json_data
 
 
-#-------------------------------------------------------------------------------------Display all active customers ----------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------Display all deleted customers ----------------------------------------------------------------------------------------
 
 @app.route("/showdeletedcustomers", methods=['GET','POST'])
 def show_deleted_customers():
@@ -200,7 +200,7 @@ def newcustomer():
 
     # Check if identification number is incorrect
     if not identification_number_check(identification_number):
-        return "Identification number is incorrect"
+        return "Identification number should have 9 digits"
 
     # Check if identification number already exists
     existing_customer = Customer.query.filter_by(identification_number=identification_number).first()
@@ -283,9 +283,10 @@ def loan_book():
     book_id = data['book_id']
     loan_date = datetime.strptime(data['loan_date'], '%Y-%m-%d')
 
+    
     # Check if identification number is incorrect
     if not identification_number_check(identification_number):
-        return "Identification number is incorrect"
+        return "cant find Identification number in the system"
     
     # Check if the customer and book exist
     customer = Customer.query.filter_by(identification_number=identification_number).first()
@@ -317,31 +318,31 @@ def loan_book():
 
 
 
+#-------------------------------------------------------------------------------------return a book----------------------------------------------------------------------------------------
+
 @app.route('/returnbook', methods=['POST'])
 def return_book():
     data = request.get_json()
     id = data['id']
     cust_id = data['cust_id']
     book_id = data['book_id']
-    return_date = datetime.datetime.strptime(data['return_date'], '%Y-%m-%d')
+    return_date = datetime.strptime(data['return_date'], '%Y-%m-%d')
 
     # Retrieve the existing loan record
     loan = Loan.query.filter_by(id=id, cust_id=cust_id, book_id=book_id).first()
 
     if not loan:
         return 'No loan record found for the given customer and book.'
-    
+
     if loan.return_date is not None:
         return "Book already returned, try a different ID number."
-
 
     # Retrieve the book instance
     book = Book.query.get(book_id)
 
-    # Convert loan_date to datetime type Check if return date is greater than loan date
-    loan_date = datetime.datetime.combine(loan.loan_date, datetime.datetime.min.time())
-    if return_date <= loan_date:
-        return 'Invalid return date. The return date should be after the loan date.'
+    # Convert loan_date to datetime type. Check if return date is greater than loan date
+    return_date = datetime.combine(loan.loan_date, datetime.min.time())
+   
 
     # Change the book status from unavailable to available
     book.loan_active = False
@@ -351,10 +352,6 @@ def return_book():
     db.session.commit()
 
     return 'Book returned successfully.'
-
-
-
-
 
 
 
