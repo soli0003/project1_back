@@ -237,10 +237,16 @@ def remove_book(id):
 #-------------------------------------------------------------------------------------Remove a customer ----------------------------------------------------------------------------------------
 @app.route('/removecustomer/<identification_number>', methods=['PUT'])
 def remove_customer(identification_number):
+
     # Find the customer by identification number
     customer = Customer.query.filter_by(identification_number=identification_number).first()
     if not customer:
         return "Customer not found."
+    
+    # Check if the customer has any active loans
+    active_loans = Loan.query.filter_by(cust_id=customer.id).filter_by(return_date=None).all()
+    if active_loans:
+        return "Cannot remove customer, They have a book on loan."
 
     customer.active = False
     db.session.commit()
